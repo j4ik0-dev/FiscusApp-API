@@ -54,9 +54,10 @@ class ExpenseController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show($id)
     {
-        //
+        $expense = Expense::findOrFail($id);
+        return response()->json($expense);
     }
 
     /**
@@ -64,7 +65,35 @@ class ExpenseController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        $expense = Expense::findOrFail($id);
+
+        // Validamos (usamos 'sometimes' para que no sea obligatorio enviar todo de nuevo)
+        $request->validate([
+            'title' => 'sometimes|string|max:255',
+            'amount' => 'sometimes|numeric',
+            'type' => 'sometimes|in:fixed,variable,ant',
+            'receipt' => 'nullable|image|max:2048',
+        ]);
+
+        $data = $request->all();
+
+        // Lógica inteligente para la foto:
+        // Si suben una nueva, borramos la vieja y guardamos la nueva.
+        if ($request->hasFile('receipt')) {
+            // Borrar foto vieja si existe
+            if ($expense->receipt_path) {
+                Storage::disk('public')->delete($expense->receipt_path);
+            }
+            // Guardar nueva
+            $data['receipt_path'] = $request->file('receipt')->store('receipts', 'public');
+        }
+
+        $expense->update($data);
+
+        return response()->json([
+            'message' => 'Gasto actualizado',
+            'data' => $expense
+        ]);
     }
 
     /**
@@ -72,6 +101,12 @@ class ExpenseController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        $expense = Expense::findOrFail($id);
+        
+        // Como usamos SoftDeletes, esto solo lo marca como "borrado" en la BD
+        // pero no borra el registro ni la foto (ideal para recuperar datos después).
+        $expense->delete();
+
+        return response()->json(['message' => 'Gasto eliminado correctamente']);
     }
 }
