@@ -2,6 +2,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ExpenseController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\UserController;
 
 //RUTAS PÚBLICAS
 Route::post('/register', [AuthController::class, 'register']);
